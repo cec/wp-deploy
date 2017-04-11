@@ -16,6 +16,7 @@ namespace :wp do
         # Get details for WordPress config file
         secret_keys = capture("curl -s -k https://api.wordpress.org/secret-key/1.1/salt")
         wp_siteurl = fetch(:stage_url)
+        use_php_ini = (fetch(:use_php_ini) || false)
         database = YAML::load_file('config/database.yml')[fetch(:stage).to_s]
 
         # Create config file in remote environment
@@ -27,6 +28,13 @@ namespace :wp do
         accessfile = ERB.new(File.read('config/templates/.htaccess.erb')).result(binding)
         io = StringIO.new(accessfile)
         upload! io, File.join(shared_path, ".htaccess")
+
+        # Create .user.ini in remote environment
+        if use_php_ini
+          inifile = ERB.new(File.read('config/templates/.user.ini')).result(binding)
+          io = StringIO.new(accessfile)
+          upload! io, File.join(shared_path, ".user.ini")
+        end
       end
       # Set some permissions
       invoke 'wp:set_permissions'
